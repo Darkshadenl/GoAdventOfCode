@@ -1,3 +1,3 @@
-module awesomeProject
+module adventofcode
 
 go 1.19

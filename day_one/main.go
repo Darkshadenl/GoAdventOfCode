@@ -21,8 +21,6 @@ var writtenNumbers = map[string]int{
 	"eight": 8,
 	"nine":  9,
 }
-var firstLetterWrittenNumbers = []string{"o", "t", "f", "s", "e", "n"}
-var lastLetterWrittenNumbers = []string{"e", "o", "r", "x", "n", "t"}
 
 var combinedWrittenNumbers = map[string]int{
 	"twone":     21,
@@ -109,25 +107,6 @@ func reverseString(s string) string {
 	return string(runes)
 }
 
-func scanForNumber(code string, reverse bool, position int) (int, int) {
-	if reverse {
-		for i := len(code) - 1; i > -1; i-- {
-			isNumber, s := uint8ToInt(code[i])
-			if isNumber {
-				return s, i
-			}
-		}
-	} else {
-		for i := 0; i < len(code); i++ {
-			isNumber, s := uint8ToInt(code[i])
-			if isNumber {
-				return s, i
-			}
-		}
-	}
-	return -1, -1
-}
-
 func replaceTextualNrs(code string) string {
 	returnVal := code
 	codeLength := len(code)
@@ -151,54 +130,11 @@ func replaceTextualNrs(code string) string {
 	return returnVal
 }
 
-func removeNonMatchingItems(codes *[]string, letter string, position int) {
-	for i, v := range *codes {
-		l := string(v[position])
-		if l == letter {
-			continue
-		}
-		// remove item at current index from codes
-		if len(*codes) == 1 {
-			*codes = []string{}
-		} else {
-			*codes = append((*codes)[:i], (*codes)[i+1:]...)
-		}
-	}
-}
-
-func getWordsStartingWithLetter(letter string) []string {
-	words := make([]string, 0)
-	for k := range writtenNumbers {
-		if strings.HasPrefix(k, letter) {
-			words = append(words, k)
-		}
-	}
-	return words
-}
-
-func arrayContainsLetter(arr []string, letter string) bool {
-	for _, v := range arr {
-		if strings.Contains(v, letter) {
-			return true
-		}
-	}
-	return false
-}
-
 func uint8ToInt(s uint8) (bool, int) {
 	if i, err := strconv.Atoi(string(s)); err == nil {
 		//log.Println("uint8 is number")
 		return true, i
 	}
 	//log.Println("uint8 is not number")
-	return false, -1
-}
-
-func stringToInt(s string) (bool, int) {
-	if i, err := strconv.Atoi(s); err == nil {
-		//log.Println("string is number")
-		return true, i
-	}
-	//log.Println("string is not number")
 	return false, -1
 }
