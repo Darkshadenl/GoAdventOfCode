@@ -24,6 +24,17 @@ var writtenNumbers = map[string]int{
 var firstLetterWrittenNumbers = []string{"o", "t", "f", "s", "e", "n"}
 var lastLetterWrittenNumbers = []string{"e", "o", "r", "x", "n", "t"}
 
+var combinedWrittenNumbers = map[string]int{
+	"twone":     21,
+	"oneight":   18,
+	"eightwo":   82,
+	"eighthree": 83,
+	"threeight": 38,
+	"fiveight":  58,
+	"sevenine":  79,
+	"nineight":  98,
+}
+
 func main() {
 	data, err := os.Open("calibrationcodes.txt")
 	if err != nil {
@@ -44,15 +55,17 @@ func findCalibrationValues(r io.Reader) int {
 
 	for scanner.Scan() {
 		code := scanner.Text()
-		//log.Println(code)
 		codeOnlyNrs := replaceTextualNrs(code)
-		log.Printf("code: %s, codeonlynrs: %s\n", code, codeOnlyNrs)
+		log.Println(code)
+		log.Println(codeOnlyNrs)
 
-		firstNumber := scanForNumber(codeOnlyNrs, false)
-		lastNumber := scanForNumber(codeOnlyNrs, true)
+		firstNumber, position := scanForNumberv2(codeOnlyNrs, 0)
+		lastNumber, _ := scanForNumberv2(codeOnlyNrs, position)
+		log.Printf("%d, %d", firstNumber, lastNumber)
 		combinedStr := fmt.Sprintf("%d%d", firstNumber, lastNumber)
 
 		if combined, err := strconv.Atoi(combinedStr); err == nil {
+			log.Printf("added %d", combined)
 			calibrationValues = append(
 				calibrationValues,
 				combined,
@@ -70,100 +83,71 @@ func findCalibrationValues(r io.Reader) int {
 	return number
 }
 
-func scanForNumber(code string, reverse bool) int {
+func scanForNumberv2(code string, skipPositions int) (int, int) {
+	sliced := code
+
+	if skipPositions > 0 {
+		sliced = reverseString(sliced)
+	}
+
+	for position := 0; position < len(sliced); position++ {
+		isNumber, number := uint8ToInt(sliced[position])
+		if isNumber {
+			return number, position + 1
+		}
+	}
+	return -1, -1
+}
+
+func reverseString(s string) string {
+	runes := []rune(s)
+
+	for i, j := 0, len(runes)-1; i < j; i, j = i+1, j-1 {
+		runes[i], runes[j] = runes[j], runes[i]
+	}
+
+	return string(runes)
+}
+
+func scanForNumber(code string, reverse bool, position int) (int, int) {
 	if reverse {
 		for i := len(code) - 1; i > -1; i-- {
 			isNumber, s := uint8ToInt(code[i])
 			if isNumber {
-				return s
+				return s, i
 			}
 		}
 	} else {
 		for i := 0; i < len(code); i++ {
 			isNumber, s := uint8ToInt(code[i])
 			if isNumber {
-				return s
+				return s, i
 			}
 		}
 	}
-	return -1
+	return -1, -1
 }
 
 func replaceTextualNrs(code string) string {
 	returnVal := code
-	skip := 0
+	codeLength := len(code)
 
-	for i := 0; i < len(code); i++ {
-		if skip > 0 {
-			skip--
-			continue
-		}
-		letter := string(code[i])
-		// check if letter is in firstLetterWrittenNumbers
-
-		foundStartLetter := arrayContainsLetter(firstLetterWrittenNumbers, letter)
-		if !foundStartLetter {
-			continue
-		}
-
-		// if found start letter, retrieve words that start with this letter from writtenNumbers
-		matchingWords := getWordsStartingWithLetter(letter)
-		if len(matchingWords) == 0 {
-			continue
-		}
-
-		nextLetterIndex := i
-		checkIndex := 0
-		for len(matchingWords) > 1 {
-			// now check next letter. Narrow down the list of words. If no words remain, continue
-			nextLetterIndex++
-			checkIndex++
-			lenCode := len(code)
-			if nextLetterIndex < lenCode-1 {
-				nextLetter := string(code[nextLetterIndex])
-				removeNonMatchingItems(&matchingWords, nextLetter, checkIndex)
-			} else {
-				break
-			}
-		}
-		if len(matchingWords) == 1 {
-			// found a match. Replace the word with the number
-			mWord := matchingWords[0]
-			mWordIndex := 0
-			breaked := false
-
-			for j := i; j < i+len(mWord)-1; j++ {
-				if j < len(code) {
-					nextLetter := string(code[j])
-					mWordLetter := string(mWord[mWordIndex])
-					mWordIndex++
-					if nextLetter != mWordLetter {
-						breaked = true
-						break
-					}
-				} else {
-					// Handle the situation when j is out of range
-					breaked = true
-					break
-				}
-			}
-
-			if !breaked {
-				matchingValue := strconv.Itoa(writtenNumbers[matchingWords[0]])
-				replacedString := strings.Replace(returnVal, mWord, matchingValue, 1)
-				if replacedString != returnVal {
-					returnVal = replacedString
-					skip = len(mWord) - 1
-				}
-
-			}
-		} else {
-			// no match found. Continue
-			//log.Println("no match found")
-			continue
+	for word, combinedWrittenNumber := range combinedWrittenNumbers {
+		if strings.Contains(code, word) {
+			returnVal = strings.Replace(returnVal, word, strconv.Itoa(combinedWrittenNumber), -1)
 		}
 	}
-	//log.Println("returnval", returnVal)
+
+	for i := 3; i < codeLength+1; i++ {
+		partial := code[:i]
+
+		for word := range writtenNumbers {
+			if strings.Contains(partial, word) {
+				returnVal = strings.Replace(returnVal, word, strconv.Itoa(writtenNumbers[word]), -1)
+			}
+		}
+	}
+
 	return returnVal
 }
 
