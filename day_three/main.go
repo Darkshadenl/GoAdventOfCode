@@ -7,28 +7,6 @@ import (
 	"strconv"
 )
 
-type Queue []string
-
-func (q *Queue) Enqueue(value string) {
-	*q = append(*q, value)
-}
-
-func (q *Queue) Dequeue() (string, bool) {
-	if len(*q) == 0 {
-		return "", false
-	}
-	element := (*q)[0]
-	*q = (*q)[1:]
-	return element, true
-}
-
-func (q *Queue) GetElement(index int) (string, bool) {
-	if index < 0 || index >= len(*q) {
-		return "", false
-	}
-	return (*q)[index], true
-}
-
 func main() {
 	file, err := os.Open("./day_three/input.txt")
 	if err != nil {
@@ -58,12 +36,12 @@ func identifyLineCharacters(line string, y int) []lineCharacter {
 		if character == "\n" {
 			continue
 		}
-		lineCharacter := lineCharacter{
+		lc := lineCharacter{
 			character: character,
 			y:         y,
 			x:         x,
 		}
-		characters = append(characters, lineCharacter)
+		characters = append(characters, lc)
 	}
 	return characters
 }
