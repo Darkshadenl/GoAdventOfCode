@@ -51,9 +51,12 @@ func main() {
 	currentLine := 0
 	q := Queue{}
 	for scanner.Scan() {
-		if currentLine >= 3 {
+		if currentLine >= 3 && currentLine < lines {
 			log.Printf("currentLine: %d", currentLine)
-			doAssignment(q)
+			doAssignment(q, false)
+			q.Dequeue()
+		} else {
+			doAssignment(q, true)
 			q.Dequeue()
 		}
 		linedata := scanner.Text()
@@ -62,21 +65,29 @@ func main() {
 	}
 }
 
-func doAssignment(lines Queue) {
-	//validSigns := []string{"/", "+", "@", "%", "=", "$", "#", "-", "*", "&"}
+func doAssignment(lines Queue, lastBatch bool) {
+	validSigns := map[string]bool{"/": true, "+": true, "@": true, "%": true, "=": true, "$": true, "#": true, "-": true, "*": true, "&": true}
 
-	//lineOne, _ := lines.GetElement(0)
-	//lineTwo, _ := lines.GetElement(1)
-	lineThree, _ := lines.GetElement(2)
-	runes := []rune(lineThree)
+	lineZero, _ := lines.GetElement(0)
+	lineOne, _ := lines.GetElement(1)
+	lineTwo, _ := lines.GetElement(2)
+
+	runes := []rune(lineOne)
 
 	for i, r := range runes {
 		index := i
 		character := string(r)
-		fmt.Println(index, character)
+		if validSigns[character] {
+			println("found valid sign")
+			fmt.Println(index, character)
+			// go through all the neighbours, and check if they contain a number.
+
+			//getNeighbours(index, [lineZero, lineOne, lineTwo])
+
+		}
 	}
 
+	//log.Println(lineZero)
 	//log.Println(lineOne)
 	//log.Println(lineTwo)
-	//log.Println(lineThree)
 }
