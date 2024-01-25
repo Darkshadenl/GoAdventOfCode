@@ -1,37 +1,82 @@
 package main
 
-func getRightNeighbour(position int, line string) {
+var lineStackG = make(lineCharacterQueue, 0)
 
+func getCharacter(Y, X int) (*lineCharacter, bool) {
+	if Y >= 0 && Y < len(lineStackG) &&
+		X >= 0 && X < len(lineStackG[Y]) {
+		return &lineStackG[Y][X], true
+	}
+	return nil, false
 }
 
-func getLeftNeighbour(position int, line string) {
-
+func getRightNeighbour(character *lineCharacter) (*lineCharacter, bool) {
+	x := character.x + 1
+	y := character.y
+	return getCharacter(y, x)
 }
 
-func getTopNeighbour(position int, line string) {
-
+func getLeftNeighbour(character *lineCharacter) (*lineCharacter, bool) {
+	x := character.x - 1
+	y := character.y
+	return getCharacter(y, x)
 }
 
-func getBottomNeighbour(position int, line string) {
-
+func getTopNeighbour(character *lineCharacter) (*lineCharacter, bool) {
+	x := character.x
+	y := character.y - 1
+	return getCharacter(y, x)
 }
 
-func getTopLeftNeighbour(position int, line string) {
-
+func getBottomNeighbour(character *lineCharacter) (*lineCharacter, bool) {
+	x := character.x
+	y := character.y + 1
+	return getCharacter(y, x)
 }
 
-func getTopRightNeighbour(position int, line string) {
-
+func getTopLeftNeighbour(character *lineCharacter) (*lineCharacter, bool) {
+	x := character.x - 1
+	y := character.y - 1
+	return getCharacter(y, x)
 }
 
-func getBottomLeftNeighbour(position int, line string) {
-
+func getTopRightNeighbour(character *lineCharacter) (*lineCharacter, bool) {
+	x := character.x + 1
+	y := character.y - 1
+	return getCharacter(y, x)
 }
 
-func getBottomRightNeighbour(position int, line string) {
-
+func getBottomLeftNeighbour(character *lineCharacter) (*lineCharacter, bool) {
+	x := character.x - 1
+	y := character.y + 1
+	return getCharacter(y, x)
 }
 
-func getNeighbours(position int, lines []string) {
+func getBottomRightNeighbour(character *lineCharacter) (*lineCharacter, bool) {
+	x := character.x + 1
+	y := character.y + 1
+	return getCharacter(y, x)
+}
 
+func getNeighbourCoordinates(lineQueue lineCharacterQueue, character *lineCharacter) []*lineCharacter {
+	lineStackG = lineQueue
+	coordinates := make([]*lineCharacter, 0)
+	functions := []func(*lineCharacter) (*lineCharacter, bool){
+		getRightNeighbour,
+		getLeftNeighbour,
+		getTopNeighbour,
+		getBottomNeighbour,
+		getTopLeftNeighbour,
+		getTopRightNeighbour,
+		getBottomLeftNeighbour,
+		getBottomRightNeighbour,
+	}
+	for _, f := range functions {
+		neighbour, ok := f(character)
+		if ok {
+			coordinates = append(coordinates, neighbour)
+		}
+	}
+
+	return coordinates
 }

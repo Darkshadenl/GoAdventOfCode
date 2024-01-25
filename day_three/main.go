@@ -2,9 +2,9 @@ package main
 
 import (
 	"bufio"
-	"fmt"
 	"log"
 	"os"
+	"strconv"
 )
 
 type Queue []string
@@ -30,13 +30,13 @@ func (q *Queue) GetElement(index int) (string, bool) {
 }
 
 func main() {
-	data, err := os.Open("./day_three/input.txt")
+	file, err := os.Open("./day_three/input.txt")
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer data.Close()
+	defer file.Close()
 
-	scanner := bufio.NewScanner(data)
+	scanner := bufio.NewScanner(file)
 	scanner.Split(bufio.ScanLines)
 	lines := -1
 
@@ -44,50 +44,130 @@ func main() {
 		lines++
 	}
 
-	data.Seek(0, 0)
-	scanner = bufio.NewScanner(data)
-	scanner.Split(bufio.ScanLines)
+	file.Seek(0, 0)
 
-	currentLine := 0
-	q := Queue{}
-	for scanner.Scan() {
-		if currentLine >= 3 && currentLine < lines {
-			log.Printf("currentLine: %d", currentLine)
-			doAssignment(q, false)
-			q.Dequeue()
-		} else {
-			doAssignment(q, true)
-			q.Dequeue()
-		}
-		linedata := scanner.Text()
-		q.Enqueue(linedata)
-		currentLine++
-	}
+	scanner = bufio.NewScanner(file)
+	iterator := NewLineIterator(scanner)
+	doAssignment(iterator)
 }
 
-func doAssignment(lines Queue, lastBatch bool) {
+func identifyLineCharacters(line string, y int) []lineCharacter {
+	characters := make([]lineCharacter, 0)
+	for x, r := range line {
+		character := string(r)
+		if character == "\n" {
+			continue
+		}
+		lineCharacter := lineCharacter{
+			character: character,
+			y:         y,
+			x:         x,
+		}
+		characters = append(characters, lineCharacter)
+	}
+	return characters
+}
+
+var iteration = 0
+
+func doAssignment(iterator *LineIterator) {
+	queueQ := lineCharacterQueue{}
+	saveList := make([]string, 0)
+
+	for {
+		line, ok := iterator.Next()
+		queueQ.EnqueueList(identifyLineCharacters(line, iteration))
+		if !ok {
+			break
+		}
+		if iteration > 1 {
+			// identify the numbers with characters as a neighbour and link them
+			res := identificationOfPartNumbers(queueQ)
+			// put all the valid numbers in a list of row 0.
+			saveList = append(saveList, getPartNumbers(res)...)
+			// once done, dequeue the first line, add it to savelist and continue.
+			_, _ = queueQ.Dequeue()
+		}
+		iteration++
+	}
+
+	log.Println()
+}
+
+func getPartNumbers(lineQueue lineCharacterQueue) []string {
+	list := make([]string, 0)
+	needed, ok := lineQueue.GetElement(0)
+	if ok {
+		for i := 0; i < len(needed); i++ {
+			if !needed[i].firstPart {
+				continue
+			}
+			part := needed[i]
+			first := part.character
+			second := ""
+			third := ""
+			if part.characterOnRight != nil {
+				second = part.characterOnRight.character
+				if part.characterOnRight.characterOnRight != nil {
+					third = part.characterOnRight.characterOnRight.character
+				}
+			}
+			final := first + second + third
+			list = append(list, final)
+		}
+	}
+	return list
+}
+
+func identificationOfPartNumbers(lineQueue lineCharacterQueue) lineCharacterQueue {
 	validSigns := map[string]bool{"/": true, "+": true, "@": true, "%": true, "=": true, "$": true, "#": true, "-": true, "*": true, "&": true}
 
-	lineZero, _ := lines.GetElement(0)
-	lineOne, _ := lines.GetElement(1)
-	lineTwo, _ := lines.GetElement(2)
+	for _, l := range lineQueue[1] {
+		if validSigns[l.character] {
+			characters := getNeighbourCoordinates(lineQueue, &l)
 
-	runes := []rune(lineOne)
+			for i := range characters {
+				c := characters[i]
+				if _, err := strconv.Atoi((*c).character); err == nil {
+					c.HasNeighbourCharacter = true
+					c.neighbourCharacter = l.character
+					substep := lineQueue[c.y]
+					numbersOnLeft := getNumbersAround(c, substep, true)
+					numbersOnLeft = linkCharacters(numbersOnLeft)
 
-	for i, r := range runes {
-		index := i
-		character := string(r)
-		if validSigns[character] {
-			println("found valid sign")
-			fmt.Println(index, character)
-			// go through all the neighbours, and check if they contain a number.
+					if len(numbersOnLeft) == 0 {
+						c.firstPart = true
+					} else {
+						c.characterOnLeft = &numbersOnLeft[len(numbersOnLeft)-1]
+					}
 
-			//getNeighbours(index, [lineZero, lineOne, lineTwo])
+					numbersOnRight := getNumbersAround(c, lineQueue[c.y], false)
+					numbersOnRight = linkCharacters(numbersOnRight)
 
+					if len(numbersOnRight) > 0 {
+						c.characterOnRight = &numbersOnRight[0]
+						numbersOnRight[0].characterOnLeft = c
+					}
+				}
+			}
+		}
+	}
+	return lineQueue
+}
+
+func linkCharacters(characters []lineCharacter) []lineCharacter {
+	if len(characters) == 0 {
+		return characters
+	}
+
+	for i := range characters {
+		if i > 0 {
+			characters[i].characterOnLeft = &characters[i-1]
+		}
+		if i < len(characters)-1 {
+			characters[i].characterOnRight = &characters[i+1]
 		}
 	}
 
-	//log.Println(lineZero)
-	//log.Println(lineOne)
-	//log.Println(lineTwo)
+	return characters
 }
