@@ -1,11 +1,14 @@
 package main
 
 import (
+	"adventofcode/utils"
 	"bufio"
 	"log"
 	"os"
 	"strconv"
 )
+
+var lines = -1
 
 func main() {
 	file, err := os.Open("./day_three/input.txt")
@@ -16,11 +19,11 @@ func main() {
 
 	scanner := bufio.NewScanner(file)
 	scanner.Split(bufio.ScanLines)
-	lines := -1
 
 	for scanner.Scan() {
 		lines++
 	}
+	log.Println("Lines: ", lines)
 
 	file.Seek(0, 0)
 
@@ -53,8 +56,8 @@ func doAssignment(iterator *LineIterator) {
 	saveList := make([]string, 0)
 
 	for {
-		line, ok := iterator.Next()
-		if !ok {
+		line, _ := iterator.Next()
+		if iteration > lines+2 {
 			break
 		}
 		if iteration > 2 {
@@ -63,10 +66,14 @@ func doAssignment(iterator *LineIterator) {
 			queueQ.EnqueueList(identifyLineCharacters(line, iteration))
 		}
 		if iteration > 1 {
+			if iteration > 138 {
+
+			}
 			// identify the numbers with characters as a neighbour and link them
 			res := identificationOfPartNumbers(queueQ)
 			// put all the valid numbers in a list of row 0.
-			saveList = append(saveList, getPartNumbers(res)...)
+			pNumbers := getPartNumbers(res)
+			saveList = append(saveList, pNumbers...)
 			// once done, dequeue the first line
 			_, _ = queueQ.Dequeue()
 			// fix Y coordinates of all remaining lines
@@ -76,11 +83,16 @@ func doAssignment(iterator *LineIterator) {
 	}
 
 	// print the list of numbers
+	count := 0
 	for i := range saveList {
-		log.Printf("%s ", saveList[i])
+		ok, nr := utils.StringToInt(saveList[i])
+		if ok {
+			count += nr
+		}
+		//log.Printf("%s ", saveList[i])
 	}
+	log.Printf("Summed: %d ", count)
 
-	log.Println()
 }
 
 func fixYCoordinates(lineQueue lineCharacterQueue) lineCharacterQueue {
@@ -129,30 +141,27 @@ func identificationOfPartNumbers(lineQueue lineCharacterQueue) lineCharacterQueu
 				if _, err := strconv.Atoi((*c).character); err == nil {
 					c.HasNeighbourCharacter = true
 					c.neighbourCharacter = l.character
-					numbersOnLeft := getNumbersAround(c, lineQueue[c.y], true)
-					numbersOnLeft = reverse(numbersOnLeft)
-					numbersOnLeft = append(numbersOnLeft, *c)
-					//numbersOnLeft = linkCharacters(numbersOnLeft, true)
+					var numbers []*lineCharacter
+					numbersLeft := getNumbersAround(c, lineQueue[c.y], true)
+					numbers = append(numbers, reversePointers(numbersLeft)...)
+					numbers = append(numbers, c)
 
-					//if len(numbersOnLeft) == 0 {
-					//	c.firstPart = true
-					//} else {
-					//	if c.characterOnLeft == nil {
-					//		c.characterOnLeft = &numbersOnLeft[len(numbersOnLeft)-1]
-					//	}
-					//}
+					numbersRight := getNumbersAround(c, lineQueue[c.y], false) // Zorgt dat dit pointers retourneert
+					numbers = append(numbers, numbersRight...)
 
-					numbersOnRight := getNumbersAround(c, lineQueue[c.y], false)
-					numbersOnRight = linkCharacters(numbersOnRight, false)
-
-					if len(numbersOnRight) > 0 {
-						if c.characterOnRight == nil {
-							c.characterOnRight = &numbersOnRight[0]
-						}
-						if numbersOnRight[0].characterOnLeft == nil {
-							numbersOnRight[0].characterOnLeft = c
+					if len(numbers) > 3 {
+						for len(numbers) > 3 {
+							lastItem := numbers[len(numbers)-1]
+							lastItem.HasNeighbourCharacter = false
+							lastItem.characterOnRight = nil
+							lastItem.characterOnLeft = nil
+							lastItem.hasFirstPart = false
+							lastItem.firstPart = false
+							numbers = numbers[:len(numbers)-1]
 						}
 					}
+
+					numbers = linkCharacters(numbers)
 				}
 			}
 		}
@@ -160,25 +169,24 @@ func identificationOfPartNumbers(lineQueue lineCharacterQueue) lineCharacterQueu
 	return lineQueue
 }
 
-func linkCharacters(characters []lineCharacter, firstOnLeft bool) []lineCharacter {
+func linkCharacters(characters []*lineCharacter) []*lineCharacter {
 	if len(characters) == 0 {
 		return characters
 	}
-	if firstOnLeft {
-		characters[0].firstPart = true
-	} else {
-		characters[len(characters)-1].firstPart = true
-	}
 
 	for i := range characters {
+		if i == 0 {
+			characters[i].firstPart = true
+		}
 		if i > 0 {
 			if characters[i].characterOnLeft == nil {
-				characters[i].characterOnLeft = &characters[i-1]
+				characters[i].characterOnLeft = characters[i-1]
+				characters[i].hasFirstPart = true
 			}
 		}
 		if i < len(characters)-1 {
 			if characters[i].characterOnRight == nil {
-				characters[i].characterOnRight = &characters[i+1]
+				characters[i].characterOnRight = characters[i+1]
 			}
 		}
 	}

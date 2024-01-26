@@ -5,7 +5,9 @@ var lineStackG = make(lineCharacterQueue, 0)
 func getCharacter(Y, X int) (*lineCharacter, bool) {
 	if Y >= 0 && Y < len(lineStackG) &&
 		X >= 0 && X < len(lineStackG[Y]) {
-		return &lineStackG[Y][X], true
+		if !lineStackG[Y][X].hasFirstPart && !lineStackG[Y][X].firstPart {
+			return &lineStackG[Y][X], true
+		}
 	}
 	return nil, false
 }
