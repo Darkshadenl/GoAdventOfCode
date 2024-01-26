@@ -54,22 +54,42 @@ func doAssignment(iterator *LineIterator) {
 
 	for {
 		line, ok := iterator.Next()
-		queueQ.EnqueueList(identifyLineCharacters(line, iteration))
 		if !ok {
 			break
+		}
+		if iteration > 2 {
+			queueQ.EnqueueList(identifyLineCharacters(line, 2))
+		} else {
+			queueQ.EnqueueList(identifyLineCharacters(line, iteration))
 		}
 		if iteration > 1 {
 			// identify the numbers with characters as a neighbour and link them
 			res := identificationOfPartNumbers(queueQ)
 			// put all the valid numbers in a list of row 0.
 			saveList = append(saveList, getPartNumbers(res)...)
-			// once done, dequeue the first line, add it to savelist and continue.
+			// once done, dequeue the first line
 			_, _ = queueQ.Dequeue()
+			// fix Y coordinates of all remaining lines
+			queueQ = fixYCoordinates(queueQ)
 		}
 		iteration++
 	}
 
+	// print the list of numbers
+	for i := range saveList {
+		log.Printf("%s ", saveList[i])
+	}
+
 	log.Println()
+}
+
+func fixYCoordinates(lineQueue lineCharacterQueue) lineCharacterQueue {
+	for i := 0; i < len(lineQueue); i++ {
+		for j := 0; j < len(lineQueue[i]); j++ {
+			lineQueue[i][j].y = lineQueue[i][j].y - 1
+		}
+	}
+	return lineQueue
 }
 
 func getPartNumbers(lineQueue lineCharacterQueue) []string {
@@ -109,22 +129,29 @@ func identificationOfPartNumbers(lineQueue lineCharacterQueue) lineCharacterQueu
 				if _, err := strconv.Atoi((*c).character); err == nil {
 					c.HasNeighbourCharacter = true
 					c.neighbourCharacter = l.character
-					substep := lineQueue[c.y]
-					numbersOnLeft := getNumbersAround(c, substep, true)
-					numbersOnLeft = linkCharacters(numbersOnLeft)
+					numbersOnLeft := getNumbersAround(c, lineQueue[c.y], true)
+					numbersOnLeft = reverse(numbersOnLeft)
+					numbersOnLeft = append(numbersOnLeft, *c)
+					//numbersOnLeft = linkCharacters(numbersOnLeft, true)
 
-					if len(numbersOnLeft) == 0 {
-						c.firstPart = true
-					} else {
-						c.characterOnLeft = &numbersOnLeft[len(numbersOnLeft)-1]
-					}
+					//if len(numbersOnLeft) == 0 {
+					//	c.firstPart = true
+					//} else {
+					//	if c.characterOnLeft == nil {
+					//		c.characterOnLeft = &numbersOnLeft[len(numbersOnLeft)-1]
+					//	}
+					//}
 
 					numbersOnRight := getNumbersAround(c, lineQueue[c.y], false)
-					numbersOnRight = linkCharacters(numbersOnRight)
+					numbersOnRight = linkCharacters(numbersOnRight, false)
 
 					if len(numbersOnRight) > 0 {
-						c.characterOnRight = &numbersOnRight[0]
-						numbersOnRight[0].characterOnLeft = c
+						if c.characterOnRight == nil {
+							c.characterOnRight = &numbersOnRight[0]
+						}
+						if numbersOnRight[0].characterOnLeft == nil {
+							numbersOnRight[0].characterOnLeft = c
+						}
 					}
 				}
 			}
@@ -133,17 +160,26 @@ func identificationOfPartNumbers(lineQueue lineCharacterQueue) lineCharacterQueu
 	return lineQueue
 }
 
-func linkCharacters(characters []lineCharacter) []lineCharacter {
+func linkCharacters(characters []lineCharacter, firstOnLeft bool) []lineCharacter {
 	if len(characters) == 0 {
 		return characters
+	}
+	if firstOnLeft {
+		characters[0].firstPart = true
+	} else {
+		characters[len(characters)-1].firstPart = true
 	}
 
 	for i := range characters {
 		if i > 0 {
-			characters[i].characterOnLeft = &characters[i-1]
+			if characters[i].characterOnLeft == nil {
+				characters[i].characterOnLeft = &characters[i-1]
+			}
 		}
 		if i < len(characters)-1 {
-			characters[i].characterOnRight = &characters[i+1]
+			if characters[i].characterOnRight == nil {
+				characters[i].characterOnRight = &characters[i+1]
+			}
 		}
 	}
 

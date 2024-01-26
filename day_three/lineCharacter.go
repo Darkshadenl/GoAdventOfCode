@@ -44,3 +44,10 @@ func isLineCharacterANumber(p lineCharacter) bool {
 	}
 	return false
 }
+
+func reverse(slice []lineCharacter) []lineCharacter {
+	for i, j := 0, len(slice)-1; i < j; i, j = i+1, j-1 {
+		slice[i], slice[j] = slice[j], slice[i]
+	}
+	return slice
+}

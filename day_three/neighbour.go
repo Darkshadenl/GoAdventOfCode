@@ -62,13 +62,13 @@ func getNeighbourCoordinates(lineQueue lineCharacterQueue, character *lineCharac
 	lineStackG = lineQueue
 	coordinates := make([]*lineCharacter, 0)
 	functions := []func(*lineCharacter) (*lineCharacter, bool){
-		getRightNeighbour,
+		getTopLeftNeighbour,
 		getLeftNeighbour,
+		getBottomLeftNeighbour,
 		getTopNeighbour,
 		getBottomNeighbour,
-		getTopLeftNeighbour,
 		getTopRightNeighbour,
-		getBottomLeftNeighbour,
+		getRightNeighbour,
 		getBottomRightNeighbour,
 	}
 	for _, f := range functions {
